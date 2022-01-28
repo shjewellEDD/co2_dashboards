@@ -4,6 +4,7 @@ Start Dashboard
 '''
 
 import datetime
+import pandas as pd
 
 import dash
 from dash import dcc, dash_table
@@ -12,18 +13,20 @@ from dash.dependencies import Input, Output
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 from dash import html as dhtml
-import plotly.express as px
 
 import data_import
-#import real_time_callbacks as cb
 
 set_url = 'http://dunkel.pmel.noaa.gov:9290/erddap/tabledap/asvco2_gas_validation_all_fixed_station_mirror.csv'
-rt_url = 'https://data.pmel.noaa.gov/generic/erddap/tabledap/sd_shakedown_collection.csv'
+rt_url1 = 'https://data.pmel.noaa.gov/generic/erddap/tabledap/sd_shakedown_collection.csv'
+rt_url2 = 'https://dunkel.pmel.noaa.gov:9290/erddap/tabledap/sd1067_2021_post_mission.csv'
+rt_url3 = 'https://dunkel.pmel.noaa.gov:9290/erddap/tabledap/sd1030_2021_post_mission.csv'
 set_loc = 'D:\Data\CO2 Sensor tests\\asvco2_gas_validation_all_fixed_station_mirror.csv'
 
-dataset = data_import.Dataset(rt_url)
-
-graph_height = 300
+dataset = data_import.Dataset(rt_url1)
+# dataset2 = data_import.Dataset(rt_url2)
+# dataset3 = data_import.Dataset(rt_url3)
+#
+# dataset = pd.concat([dataset1, dataset2, dataset3])
 
 # graph_config = {'modeBarButtonsToRemove' : ['hoverCompareCartesian','select2d', 'lasso2d'],
 #                 'doubleClick':  'reset+autosize', 'toImageButtonOptions': { 'height': None, 'width': None, },
@@ -54,7 +57,7 @@ tools_card = dbc.Card(
                 #style={'backgroundColor': colors['background']},
                 options=dataset.co2_custom_data(),
                 #value=dataset.co2_custom_data()[0]['value'],
-                value='co2_span',
+                value='co2_raw',
                 clearable=False
                 )
             ])
@@ -115,28 +118,21 @@ def plot_evar(selection, t_start, t_end):
             Secondary: SSS and SST
         '''
 
-        # for instr in states:
-        sw = go.Scatter(x=df['time'], y=df['XCO2_DRY_SW_MEAN_ASVCO2'].dropna(), name='Seawater CO2', hoverinfo='x+y+name')
-        air = go.Scatter(x=df['time'], y=df['XCO2_DRY_AIR_MEAN_ASVCO2'].dropna(), name='CO2 Air', hoverinfo='x+y+name')
-        sss = go.Scatter(x=df['time'], y=df['SAL_SBE37_MEAN'].dropna(), name='SSS', hoverinfo='x+y+name')
-        sst = go.Scatter(x=df['time'], y=df['TEMP_SBE37_MEAN'].dropna(), name='SST', hoverinfo='x+y+name')
-
         load_plots = make_subplots(rows=3, cols=1, shared_xaxes='all',
                                    subplot_titles=("XCO2 DRY", "SSS", "SST"),
                                    shared_yaxes=False, vertical_spacing=0.1)
 
-        # load_plots.append_trace(sw, row=1, col=1)
-        # load_plots.add_trace(air, row=1, col=1)
-        # load_plots.append_trace(sss, row=2, col=1)
-        # load_plots.append_trace(sst, row=3, col=1)
+        load_plots.add_scatter(x=df['time'], y=df['XCO2_DRY_SW_MEAN_ASVCO2'].dropna(), mode='markers',
+                               marker={'size': 2}, name='Seawater CO2', hoverinfo='x+y+name', row=1, col=1)
+        load_plots.add_scatter(x=df['time'], y=df['XCO2_DRY_AIR_MEAN_ASVCO2'], mode='markers',
+                               marker={'size': 2}, name='CO2 Air', hoverinfo='x+y+name', row=1, col=1)
+        load_plots.add_scatter(x=df['time'], y=df['SAL_SBE37_MEAN'].dropna(), mode='markers',
+                               marker={'size': 2}, name='SSS', hoverinfo='x+y+name', row=2, col=1)
+        load_plots.add_scatter(x=df['time'], y=df['TEMP_SBE37_MEAN'].dropna(), mode='markers',
+                               marker={'size': 2}, name='SST', hoverinfo='x+y+name', row=3, col=1)
 
-        load_plots.append_trace(sw, row=1, col=1)
-        load_plots.add_scatter(air, row=1, col=1)
-        load_plots.append_trace(sss, row=2, col=1)
-        load_plots.append_trace(sst, row=3, col=1)
 
-
-        load_plots['layout'].update(#height=600,
+        load_plots['layout'].update(height=600,
                                     title=' ',
                                     hovermode='x unified',
                                     xaxis_showticklabels=True,
@@ -144,8 +140,10 @@ def plot_evar(selection, t_start, t_end):
                                     yaxis_fixedrange=True,
                                     yaxis2_fixedrange=True, yaxis3_fixedrange=True,
                                     yaxis_title='Dry CO2',
-                                    yaxis2_title='Salinity', yaxis3_title='SW Temp')
-                                    #showlegend=False, modebar={'orientation': 'h'}, autosize=True)
+                                    yaxis2_title='Salinity', yaxis3_title='SW Temp',
+                                    showlegend=False, modebar={'orientation': 'h'},
+                                    margin=dict(l=25, r=25, b=25, t=25, pad=4)
+                                    )
 
         return load_plots
 
@@ -166,21 +164,24 @@ def plot_evar(selection, t_start, t_end):
 
             co2_diff.append(templist1[n] - templist2[n])
 
-        # co2_diff = go.Scatter(df, x='time', y=co2_diff, name='CO2 Diff', hoverinfo='x+y+name')
-        # sbe = go.Scatter(df, x='time', y=df['O2_SAT_SBE37_MEAN'], name='O2_SAT_SBE37_MEAN', hoverinfo='x+y+name')
-        # o2 = go.Scatter(df, x='time', y=df['O2_MEAN_ASVCO2'], name='O2_MEAN_ASVCO2', hoverinfo='x+y+name')
 
-        co2_diff = go.Scatter(x=df['time'], y=co2_diff, name='CO2 Diff', hoverinfo='x+y+name')
-        sbe = go.Scatter(x=df['time'], y=df['O2_SAT_SBE37_MEAN'], name='O2_SAT_SBE37_MEAN', hoverinfo='x+y+name')
-        o2 = go.Scatter(x=df['time'], y=df['O2_MEAN_ASVCO2'], name='O2_MEAN_ASVCO2', hoverinfo='x+y+name')
+        # co2_diff = go.Scatter(x=df['time'], y=co2_diff, name='CO2 Diff', hoverinfo='x+y+name')
+        # sbe = go.Scatter(x=df['time'], y=df['O2_SAT_SBE37_MEAN'], name='O2_SAT_SBE37_MEAN', hoverinfo='x+y+name')
+        # o2 = go.Scatter(x=df['time'], y=df['O2_MEAN_ASVCO2'], name='O2_MEAN_ASVCO2', hoverinfo='x+y+name')
 
         load_plots = make_subplots(rows=3, cols=1, shared_xaxes='all',
                                    subplot_titles=("XCO2 DRY-AIR", "Mean O2 SBE37", "Mean O2 ASVCO2"),
                                    shared_yaxes=False, vertical_spacing=0.1)
 
-        load_plots.append_trace(co2_diff, row=1, col=1)
-        load_plots.append_trace(sbe, row=2, col=1)
-        load_plots.append_trace(o2, row=3, col=1)
+        load_plots.add_scatter(x=df['time'], y=co2_diff, name='CO2 Diff', hoverinfo='x+y+name',
+                                mode='markers', marker={'size': 2}, row=1, col=1)
+        load_plots.add_scatter(x=df['time'], y=df['O2_SAT_SBE37_MEAN'], name='O2_SAT_SBE37_MEAN', hoverinfo='x+y+name',
+                                mode='markers', marker={'size': 2}, row=2, col=1)
+
+        for n in range(1, len(states)):
+            cur_state = df[df['INSTRUMENT_STATE'] == states[n]]
+            load_plots.add_scatter(x=cur_state['time'], y=cur_state['O2_MEAN_ASVCO2'], name=states[n], hoverinfo='x+y+name',
+                                    mode='markers', marker={'size': 2},  row=3, col=1)
 
 
         load_plots['layout'].update(height=600,
@@ -191,8 +192,10 @@ def plot_evar(selection, t_start, t_end):
                                     yaxis_fixedrange=True,
                                     yaxis2_fixedrange=True, yaxis3_fixedrange=True,
                                     yaxis_title='CO2 Diff (Dry-Air)',
-                                    yaxis2_title='O2 Mean', yaxis3_title='O2 Mean'),
-                                    #showlegend=False, modebar={'orientation': 'h'}, autosize=True)
+                                    yaxis2_title='O2 Mean', yaxis3_title='O2 Mean',
+                                    showlegend=False, modebar={'orientation': 'h'}, autosize=True,
+                                    margin=dict(l=25, r=25, b=25, t=25, pad=4)
+                                    )
 
         return load_plots
 
@@ -207,7 +210,7 @@ def plot_evar(selection, t_start, t_end):
         df.dropna(axis='rows', subset=['CO2DETECTOR_PRESS_MEAN_ASVCO2'], inplace=True)
 
         load_plots = make_subplots(rows=1, cols=1,
-                                   subplot_titles=('Pressure'),
+                                   subplot_titles=['Pressure'],
                                    shared_yaxes=False)
 
         temp1 = df[df['INSTRUMENT_STATE'] == 'ZPON']
@@ -222,9 +225,8 @@ def plot_evar(selection, t_start, t_end):
 
             co2_diff.append(templist1[n] - templist2[n])
 
-        pres = go.Scatter(x=temp1['time'], y=co2_diff, name='Pressure Differential', hoverinfo='x+y+name')
-
-        load_plots.append_trace(pres, row=1, col=1)
+        load_plots.add_scatter(x=temp1['time'], y=co2_diff, name='ZP', hoverinfo='x+y+name',
+                               mode='markers', marker={'size': 2}, row=1, col=1)
 
         temp1 = df[df['INSTRUMENT_STATE'] == 'SPON']
         temp2 = df[df['INSTRUMENT_STATE'] == 'SPOFF']
@@ -237,9 +239,8 @@ def plot_evar(selection, t_start, t_end):
         for n in range(len(templist1)):
             co2_diff.append(templist1[n] - templist2[n])
 
-        pres = go.Scatter(x=temp1['time'], y=co2_diff, name='Pressure Differential', hoverinfo='x+y+name')
-
-        load_plots.add_trace(pres, row=1, col=1)
+        load_plots.add_scatter(x=temp1['time'], y=co2_diff, name='SP', hoverinfo='x+y+name',
+                               mode='markers', marker={'size': 2}, row=1, col=1)
 
         temp1 = df[df['INSTRUMENT_STATE'] == 'EPON']
         temp2 = df[df['INSTRUMENT_STATE'] == 'EPOFF']
@@ -252,9 +253,8 @@ def plot_evar(selection, t_start, t_end):
         for n in range(len(templist1)):
             co2_diff.append(templist1[n] - templist2[n])
 
-        pres = go.Scatter(x=temp1['time'], y=co2_diff, name='Pressure Differential', hoverinfo='x+y+name')
-
-        load_plots.add_trace(pres, row=1, col=1)
+        load_plots.add_scatter(x=temp1['time'], y=co2_diff, name='EP', hoverinfo='x+y+name',
+                               mode='markers', marker={'size': 2}, row=1, col=1)
 
         temp1 = df[df['INSTRUMENT_STATE'] == 'APON']
         temp2 = df[df['INSTRUMENT_STATE'] == 'APOFF']
@@ -267,17 +267,18 @@ def plot_evar(selection, t_start, t_end):
         for n in range(len(templist1)):
             co2_diff.append(templist1[n] - templist2[n])
 
-        pres = go.Scatter(x=temp1['time'], y=co2_diff, name='Pressure Differential', hoverinfo='x+y+name')
-
-        load_plots.add_trace(pres, row=1, col=1)
+        load_plots.add_scatter(x=temp1['time'], y=co2_diff, name='AP', hoverinfo='x+y+name',
+                             mode='markers', marker={'size': 2}, row=1, col=1)
 
         load_plots['layout'].update(height=600,
                                     title=' ',
                                     hovermode='x unified',
                                     xaxis_showticklabels=True,
                                     yaxis_fixedrange=True,
-                                    yaxis_title='Pressure Mean')
-                                    #showlegend=False, modebar={'orientation': 'h'}, autosize=True)
+                                    yaxis_title='Pressure Mean',
+                                    showlegend=False, modebar={'orientation': 'h'}, autosize=True,
+                                    margin=dict(l=25, r=25, b=25, t=25, pad=4)
+                                    )
 
         return load_plots
 
@@ -294,29 +295,30 @@ def plot_evar(selection, t_start, t_end):
 
         temp = df[df['INSTRUMENT_STATE'] == 'ZPON']
 
-        pres = go.Scatter(x=temp['time'], y=temp['CO2DETECTOR_PRESS_MEAN_ASVCO2'])
-
         load_plots = make_subplots(rows=1, cols=1,
-                                   subplot_titles='Pressure',
+                                   subplot_titles=['Pressure'],
                                    shared_yaxes=False)
 
-        load_plots.append_trace(pres, row=1, col=1)
+        load_plots.add_scatter(x=temp['time'], y=temp['CO2DETECTOR_PRESS_MEAN_ASVCO2'], name='ZPON', hoverinfo='x+y+name',
+                               mode='markers', marker={'size': 2}, row=1, col=1)
 
         for n in range(1, len(states)):
 
              cur_state = df[df['INSTRUMENT_STATE'] == states[n]]
 
-             pres = go.Scatter(x=cur_state['time'], y=cur_state['CO2DETECTOR_PRESS_MEAN_ASVCO2'], name='Pressure Mean', hoverinfo='x+y+name')
-
-             load_plots.append_trace(pres, row=1, col=1)
+             load_plots.add_scatter(x=cur_state['time'], y=cur_state['CO2DETECTOR_PRESS_MEAN_ASVCO2'],
+                                     name=states[n], hoverinfo='x+y+name',
+                                     mode='markers', marker={'size': 2},  row=1, col=1)
 
         load_plots['layout'].update(height=600,
                                     title=' ',
                                     hovermode='x unified',
                                     xaxis_showticklabels=True,
                                     yaxis_fixedrange=True,
-                                    yaxis_title='CO2DETECTOR_PRESS_MEAN_ASVCO2')
-                                    #showlegend=False, modebar={'orientation': 'h'}, autosize=True)
+                                    yaxis_title='CO2 Mean Pressure',
+                                    showlegend=False, modebar={'orientation': 'h'}, autosize=True,
+                                    margin=dict(l=25, r=25, b=25, t=25, pad=4)
+                                    )
 
         return load_plots
 
@@ -334,19 +336,19 @@ def plot_evar(selection, t_start, t_end):
         primary3 = df[df['INSTRUMENT_STATE'] == 'ZPPCAL']
         secondary = df[df['INSTRUMENT_STATE'] == 'ZPOFF']
 
-        co21 = go.Scatter(x=primary1['time'], y=primary1['CO2_MEAN_ASVCO2'], name='ZPON', hoverinfo='x+y+name')
-        co22 = go.Scatter(x=primary2['time'], y=primary2['CO2_MEAN_ASVCO2'], name='ZPOFF', hoverinfo='x+y+name')
-        co23 = go.Scatter(x=primary3['time'], y=primary3['CO2_MEAN_ASVCO2'], name='ZPPCAL', hoverinfo='x+y+name')
-        temp = go.Scatter(x=secondary['time'], y=secondary['CO2DETECTOR_TEMP_MEAN_ASVCO2'].dropna(), name='ZPOFF', hoverinfo='x+y+name')
-
-        load_plots = make_subplots(rows=3, cols=1, shared_xaxes='all',
+        load_plots = make_subplots(rows=2, cols=1, shared_xaxes='all',
                                    subplot_titles=("CO2_MEAN_ASVCO2", "CO2DETECTOR_TEMP_MEAN_ASVCO2"),
                                    shared_yaxes=False, vertical_spacing=0.1)
 
-        load_plots.append_trace(co21, row=1, col=1)
-        load_plots.add_trace(co22, row=1, col=1)
-        load_plots.add_trace(co23, row=1, col=1)
-        load_plots.append_trace(temp, row=2, col=1)
+        load_plots.add_scatter(x=primary1['time'], y=primary1['CO2_MEAN_ASVCO2'], name='ZPON', hoverinfo='x+y+name',
+                                mode='markers', marker={'size': 2}, row=1, col=1)
+        load_plots.add_scatter(x=primary2['time'], y=primary2['CO2_MEAN_ASVCO2'], name='ZPOFF', hoverinfo='x+y+name',
+                                mode='markers', marker={'size': 2}, row=1, col=1)
+        load_plots.add_scatter(x=primary3['time'], y=primary3['CO2_MEAN_ASVCO2'], name='ZPPCAL', hoverinfo='x+y+name',
+                                mode='markers', marker={'size': 2}, row=1, col=1)
+        load_plots.add_scatter(x=secondary['time'], y=secondary['CO2DETECTOR_TEMP_MEAN_ASVCO2'].dropna(),
+                                name='ZPOFF', hoverinfo='x+y+name',
+                                mode='markers', marker={'size': 2}, row=2, col=1)
 
 
         load_plots['layout'].update(height=600,
@@ -356,11 +358,14 @@ def plot_evar(selection, t_start, t_end):
                                     xaxis2_showticklabels=True,
                                     yaxis_fixedrange=True,
                                     yaxis2_fixedrange=True,
-                                    yaxis_title='CO2_MEAN_ASVCO2',
-                                    yaxis2_title='CO2DETECTOR_TEMP_MEAN_ASVCO2')
-                                    #showlegend=False, modebar={'orientation': 'h'}, autosize=True)
+                                    yaxis_title='CO2 Mean',
+                                    yaxis2_title='Temp. Mean',
+                                    showlegend=False, modebar={'orientation': 'h'}, autosize=True,
+                                    margin=dict(l=25, r=25, b=25, t=25, pad=4)
+                                    )
 
         return load_plots
+
 
     def co2_mean_sp(df):
         '''
@@ -376,20 +381,19 @@ def plot_evar(selection, t_start, t_end):
         primary3 = df[df['INSTRUMENT_STATE'] == 'SPPCAL']
         secondary = df[df['INSTRUMENT_STATE'] == 'SPOFF']
 
-        co21 = go.Scatter(x=primary1['time'], y=primary1['CO2_MEAN_ASVCO2'], name='SPON', hoverinfo='x+y+name')
-        co22 = go.Scatter(x=primary2['time'], y=primary2['CO2_MEAN_ASVCO2'], name='SPOFF', hoverinfo='x+y+name')
-        co23 = go.Scatter(x=primary2['time'], y=primary2['CO2_MEAN_ASVCO2'], name='SPPCAL', hoverinfo='x+y+name')
-        temp = go.Scatter(x=secondary['time'], y=secondary['CO2DETECTOR_TEMP_MEAN_ASVCO2'].dropna(), name='ZPOFF',
-                          hoverinfo='x+y+name')
-
         load_plots = make_subplots(rows=2, cols=1, shared_xaxes='all',
                                    subplot_titles=("CO2_MEAN_ASVCO2", "CO2DETECTOR_TEMP_MEAN_ASVCO2"),
                                    shared_yaxes=False, vertical_spacing=0.1)
 
-        load_plots.append_trace(co21, row=1, col=1)
-        load_plots.add_trace(co22, row=1, col=1)
-        load_plots.add_trace(co23, row=1, col=1)
-        load_plots.append_trace(temp, row=2, col=1)
+        load_plots.add_scatter(x=primary1['time'], y=primary1['CO2_MEAN_ASVCO2'], name='SPON', hoverinfo='x+y+name',
+                               mode='markers', marker={'size': 2}, row=1, col=1)
+        load_plots.add_scatter(x=primary2['time'], y=primary2['CO2_MEAN_ASVCO2'], name='SPOFF', hoverinfo='x+y+name',
+                               mode='markers', marker={'size': 2}, row=1, col=1)
+        load_plots.add_scatter(x=primary3['time'], y=primary3['CO2_MEAN_ASVCO2'], name='SPPCAL', hoverinfo='x+y+name',
+                               mode='markers', marker={'size': 2}, row=1, col=1)
+        load_plots.add_scatter(x=secondary['time'], y=secondary['CO2DETECTOR_TEMP_MEAN_ASVCO2'].dropna(), name='ZPOFF',
+                               hoverinfo='x+y+name',
+                               mode='markers', marker={'size': 2}, row=2, col=1)
 
 
         load_plots['layout'].update(height=600,
@@ -399,9 +403,11 @@ def plot_evar(selection, t_start, t_end):
                                     xaxis2_showticklabels=True,
                                     yaxis_fixedrange=True,
                                     yaxis2_fixedrange=True,
-                                    yaxis_title='CO2_MEAN_ASVCO2',
-                                    yaxis2_title='CO2DETECTOR_TEMP_MEAN_ASVCO2')
-                                    #showlegend=False, modebar={'orientation': 'h'}, autosize=True)
+                                    yaxis_title='CO2 Mean',
+                                    yaxis2_title='Temp Mean',
+                                    showlegend=False, modebar = {'orientation': 'h'}, autosize=True,
+                                    margin=dict(l=25, r=25, b=25, t=25, pad=4)
+                                    )
 
         return load_plots
 
@@ -415,22 +421,28 @@ def plot_evar(selection, t_start, t_end):
 
         dset = df[df['INSTRUMENT_STATE'] == 'SPOFF']
 
-        co2 = go.Scatter(x=dset['CO2DETECTOR_TEMP_MEAN_ASVCO2'], y=dset['CO2DETECTOR_SPAN_COEFFICIENT_ASVCO2'], name='CO2 Detector', hoverinfo='x+y+name')
+        co2 = go.Scatter()
 
-        load_plots = make_subplots(rows=1, cols=1, shared_xaxes='all',
+        load_plots = make_subplots(rows=1, cols=1, shared_xaxes='all', subplot_titles=['SPOFF Temp vs Span'],
                                    shared_yaxes=False, vertical_spacing=0.1)
 
-        load_plots.append_trace(co2, row=1, col=1)
+        load_plots.add_scatter(x=dset['CO2DETECTOR_TEMP_MEAN_ASVCO2'], y=dset['CO2DETECTOR_SPAN_COEFFICIENT_ASVCO2'],
+                               name='CO2 Detector', hoverinfo='x+y+name',
+                               mode='markers', marker={'size': 2}, row=1, col=1)
 
         load_plots['layout'].update(height=600,
                                     title=' ',
                                     hovermode='x unified',
                                     xaxis_showticklabels=True,
+                                    xaxis_title='Temp Mean',
                                     yaxis_fixedrange=True,
-                                    yaxis_title='CO2DETECTOR_SPAN_COEFFICIENT_ASVCO2')
-                                    #showlegend=False, modebar={'orientation': 'h'}, autosize=True)
+                                    yaxis_title='Span Coefficient',
+                                    showlegend=False, modebar={'orientation': 'h'}, autosize=True,
+                                    margin=dict(l=25, r=25, b=25, t=25, pad=4)
+                                    )
 
         return load_plots
+
 
     def co2_zero_temp(df):
         '''
@@ -441,22 +453,26 @@ def plot_evar(selection, t_start, t_end):
         '''
         dset = df[df['INSTRUMENT_STATE'] == 'ZPOFF']
 
-        co2 = go.Scatter(x=dset['CO2DETECTOR_TEMP_MEAN_ASVCO2'], y=dset['CO2DETECTOR_SPAN_COEFFICIENT_ASVCO2'], name='CO2 Detector', hoverinfo='x+y+name')
-
-        load_plots = make_subplots(rows=1, cols=1, shared_xaxes='all',
+        load_plots = make_subplots(rows=1, cols=1, shared_xaxes='all', subplot_titles=['Zero Coefficient'],
                                    shared_yaxes=False, vertical_spacing=0.1)
 
-        load_plots.append_trace(co2, row=1, col=1)
+        load_plots.add_scatter(x=dset['CO2DETECTOR_TEMP_MEAN_ASVCO2'], y=dset['CO2DETECTOR_SPAN_COEFFICIENT_ASVCO2'],
+                               name='CO2 Detector', hoverinfo='x+y+name',
+                               mode='markers', marker={'size': 2}, row=1, col=1)
 
         load_plots['layout'].update(height=600,
                                     title=' ',
                                     hovermode='x unified',
                                     xaxis_showticklabels=True,
                                     yaxis_fixedrange=True,
-                                    yaxis_title='CO2DETECTOR_SPAN_COEFFICIENT_ASVCO2')
-                                    #showlegend=False, modebar={'orientation': 'h'}, autosize=True)
+                                    xaxis_title='Temp Mean',
+                                    yaxis_title='Span Coefficient',
+                                    showlegend=False, modebar={'orientation': 'h'}, autosize=True,
+                                    margin = dict(l=25, r=25, b=25, t=25, pad=4)
+                                    )
 
         return load_plots
+
 
     def co2_stddev(df):
         '''
@@ -466,22 +482,26 @@ def plot_evar(selection, t_start, t_end):
             Primary: CO2_STDDEV_ASVCO2
         '''
 
-        co2 = go.Scatter(x=df['time'], y=df['CO2_STDDEV_ASVCO2'], name='CO2 STDDEV', hoverinfo='x+y+name')
-
-        load_plots = make_subplots(rows=1, cols=1, shared_xaxes='all',
+        load_plots = make_subplots(rows=1, cols=1, shared_xaxes='all', subplot_titles=('CO2 Standard Deviation'),
                                    shared_yaxes=False, vertical_spacing=0.1)
 
-        load_plots.append_trace(co2, row=1, col=1)
+        for n in range(1, len(states)):
+            cur_state = df[df['INSTRUMENT_STATE'] == states[n]]
+            load_plots.add_scatter(x=cur_state['time'], y=cur_state['CO2_STDDEV_ASVCO2'], name=states[n], hoverinfo='x+y+name',
+                                   mode='markers', marker={'size': 2}, row=1, col=1)
 
         load_plots['layout'].update(height=600,
                                     title=' ',
                                     hovermode='x unified',
                                     xaxis_showticklabels=True,
                                     yaxis_fixedrange=True,
-                                    yaxis_title='CO2_STDDEV_ASVCO2')
-                                    #showlegend=False, modebar={'orientation': 'h'}, autosize=True)
+                                    yaxis_title='CO2_STDDEV_ASVCO2',
+                                    showlegend=False, modebar={'orientation': 'h'}, autosize=True,
+                                    margin = dict(l=25, r=25, b=25, t=25, pad=4)
+                                    )
 
         return load_plots
+
 
     def o2_mean(df):
         '''
@@ -491,27 +511,30 @@ def plot_evar(selection, t_start, t_end):
             Primary: O2_MEAN_ASVCO2 for APOFF and EPOFF
         '''
 
-        apoff = df[df['INSTRUMENT_STATE'] == 'SPOFF']
+        apoff = df[df['INSTRUMENT_STATE'] == 'APOFF']
         epoff = df[df['INSTRUMENT_STATE'] == 'EPOFF']
 
-        set1 = go.Scatter(x=df['time'], y=df['O2_MEAN_ASVCO2'], name='SPOFF', hoverinfo='x+y+name')
-        set2 = go.Scatter(x=df['time'], y=df['O2_MEAN_ASVCO2'], name='EPOFF', hoverinfo='x+y+name')
-
-        load_plots = make_subplots(rows=2, cols=1, shared_xaxes='all',
+        load_plots = make_subplots(rows=2, cols=1, shared_xaxes='all', subplot_titles=['O2 - APOFF', 'O2 -  EPOFF'],
                                    shared_yaxes=False, vertical_spacing=0.1)
 
-        load_plots.append_trace(set1, row=1, col=1)
-        load_plots.append_trace(set2, row=2, col=1)
+        load_plots.add_scatter(x=apoff['time'], y=apoff['O2_MEAN_ASVCO2'], name='SPOFF', hoverinfo='x+y+name',
+                               mode='markers', marker={'size': 2}, row=1, col=1)
+        load_plots.add_scatter(x=epoff['time'], y=epoff['O2_MEAN_ASVCO2'], name='EPOFF', hoverinfo='x+y+name',
+                               mode='markers', marker={'size': 2}, row=2, col=1)
 
         load_plots['layout'].update(height=600,
                                     title=' ',
                                     hovermode='x unified',
                                     xaxis_showticklabels=True,
                                     yaxis_fixedrange=True,
-                                    yaxis_title='O2_MEAN_ASVCO2')
-                                    #showlegend=False, modebar={'orientation': 'h'}, autosize=True)
+                                    yaxis_title='SPOFF',
+                                    yaxis2_title='EPOFF',
+                                    showlegend=False, modebar={'orientation': 'h'}, autosize=True,
+                                    margin = dict(l=25, r=25, b=25, t=25, pad=4)
+                                    )
 
         return load_plots
+
 
     def co2_span(df):
         '''
@@ -524,15 +547,15 @@ def plot_evar(selection, t_start, t_end):
 
         dset = df[df['INSTRUMENT_STATE'] == 'SPOFF']
 
-        primary = go.Scatter(x=df['time'], y=df['CO2DETECTOR_SPAN_COEFFICIENT_ASVCO2'], name='CO2 Span Coef.', hoverinfo='x+y+name')
-        secondary = go.Scatter(x=dset['time'], y=df['CO2DETECTOR_TEMP_MEAN_ASVCO2'], name='Temp Mean',
-                             hoverinfo='x+y+name')
-
-        load_plots = make_subplots(rows=2, cols=1, shared_xaxes='all',
+        load_plots = make_subplots(rows=2, cols=1, shared_xaxes='all', subplot_titles=['Span Coeffient', 'Mean Temperature - SPOFF'],
                                    shared_yaxes=False, vertical_spacing=0.1)
 
-        load_plots.append_trace(primary, row=1, col=1)
-        load_plots.append_trace(secondary, row=2, col=1)
+        load_plots.add_scatter(x=df['time'], y=df['CO2DETECTOR_SPAN_COEFFICIENT_ASVCO2'],
+                               name='CO2 Span Coef.', hoverinfo='x+y+name',
+                               mode='markers', marker={'size': 2}, row=1, col=1)
+        load_plots.add_scatter(x=dset['time'], y=df['CO2DETECTOR_TEMP_MEAN_ASVCO2'],
+                               name='Temp Mean', hoverinfo='x+y+name',
+                               mode='markers', marker={'size': 2}, row=2, col=1)
 
         load_plots['layout'].update(height=600,
                                     title=' ',
@@ -541,9 +564,11 @@ def plot_evar(selection, t_start, t_end):
                                     xaxis2_showticklabels=True,
                                     yaxis_fixedrange=True,
                                     yaxis2_fixedrange=True,
-                                    yaxis_title='CO2DETECTOR_SPAN_COEFFICIENT_ASVCO2',
-                                    yaxis2_title='CO2DETECTOR_TEMP_MEAN_ASVCO2')
-                                    #showlegend=False, modebar={'orientation': 'h'}, autosize=True)
+                                    yaxis_title='Span Coef',
+                                    yaxis2_title='Temp Mean',
+                                    showlegend=False, modebar={'orientation': 'h'}, autosize=True,
+                                    margin = dict(l=25, r=25, b=25, t=25, pad=4)
+                                    )
 
         return load_plots
 
@@ -558,16 +583,15 @@ def plot_evar(selection, t_start, t_end):
 
         dset = df[df['INSTRUMENT_STATE'] == 'ZPOFF']
 
-        primary = go.Scatter(x=df['time'], y=df['CO2DETECTOR_ZERO_COEFFICIENT_ASVCO2'], name='CO2 Span Coef.',
-                             hoverinfo='x+y+name')
-        secondary = go.Scatter(x=dset['time'], y=df['CO2DETECTOR_TEMP_MEAN_ASVCO2'], name='Temp Mean',
-                               hoverinfo='x+y+name')
-
-        load_plots = make_subplots(rows=2, cols=1, shared_xaxes='all',
+        load_plots = make_subplots(rows=2, cols=1, shared_xaxes='all', subplot_titles=['Zero Span Coefficient', 'Temperature Mean - ZPOFF'],
                                    shared_yaxes=False, vertical_spacing=0.1)
 
-        load_plots.append_trace(primary, row=1, col=1)
-        load_plots.append_trace(secondary, row=2, col=1)
+        load_plots.add_scatter(x=df['time'], y=df['CO2DETECTOR_ZERO_COEFFICIENT_ASVCO2'],
+                               name='CO2 Span Coef.', hoverinfo='x+y+name',
+                               mode='markers', marker={'size': 2}, row=1, col=1)
+        load_plots.add_scatter(x=dset['time'], y=df['CO2DETECTOR_TEMP_MEAN_ASVCO2'],
+                               name='Temp Mean', hoverinfo='x+y+name',
+                               mode='markers', marker={'size': 2}, row=2, col=1)
 
         load_plots['layout'].update(height=600,
                                     title=' ',
@@ -576,9 +600,50 @@ def plot_evar(selection, t_start, t_end):
                                     xaxis2_showticklabels=True,
                                     yaxis_fixedrange=True,
                                     yaxis2_fixedrange=True,
-                                    yaxis_title='CO2DETECTOR_SPAN_COEFFICIENT_ASVCO2',
-                                    yaxis2_title='CO2DETECTOR_TEMP_MEAN_ASVCO2')
-                                    #showlegend=False, modebar={'orientation': 'h'}, autosize=True)
+                                    yaxis_title='Span Coef',
+                                    yaxis2_title='Temp Mean',
+                                    showlegend=False, modebar={'orientation': 'h'}, autosize=True,
+                                    margin = dict(l=25, r=25, b=25, t=25, pad=4)
+                                    )
+
+        return load_plots
+
+    def pres_state(df):
+        '''
+        #13
+        'pres_state'
+        'Pressure State',
+            Primary: CO2DETECTOR_ZERO_COEFFICIENT_ASVCO2
+            Secondary: CO2DETECTOR_TEMP_MEAN_ASVCO2 for ZPOFF
+        '''
+
+        dset = df[df['INSTRUMENT_STATE'] == 'APOFF']
+
+        pres_diff = []
+
+        templist1 = dset['CO2DETECTOR_PRESS_MEAN_ASVCO2'].to_list()
+        templist2 = dset['CO2DETECTOR_PRESS_UNCOMP_STDDEV_ASVCO2'].to_list()
+
+        for n in range(len(templist1)):
+
+            pres_diff.append(templist1[n] - templist2[n])
+
+        load_plots = make_subplots(rows=1, cols=1, shared_xaxes='all', subplot_titles=['Pressure Differential - APOFF'],
+                                   shared_yaxes=False, vertical_spacing=0.1)
+
+        load_plots.add_scatter(x=dset['time'], y=pres_diff,
+                               name='CO2 Span Coef.', hoverinfo='x+y+name',
+                               mode='markers', marker={'size': 2}, row=1, col=1)
+
+        load_plots['layout'].update(height=600,
+                                    title=' ',
+                                    hovermode='x unified',
+                                    xaxis_showticklabels=True,
+                                    yaxis_fixedrange=True,
+                                    yaxis_title='Pres. Diff.',
+                                    showlegend=False, modebar={'orientation': 'h'}, autosize=True,
+                                    margin = dict(l=25, r=25, b=25, t=25, pad=4)
+                                    )
 
         return load_plots
 
@@ -595,7 +660,8 @@ def plot_evar(selection, t_start, t_end):
         'co2_stddev':       co2_stddev(data),
         'o2_mean':          o2_mean(data),
         'co2_span':         co2_span(data),
-        'co2_zero':         co2_zero(data)
+        'co2_zero':         co2_zero(data),
+        'pres_state':       pres_state(data)
         }.get(case)
 
     states = ['ZPON', 'ZPOFF', 'ZPPCAL', 'SPON', 'SPOFF', 'SPPCAL', 'EPON', 'EPOFF', 'APON', 'APOFF']
