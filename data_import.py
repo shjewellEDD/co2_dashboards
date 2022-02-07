@@ -113,25 +113,6 @@ class Dataset:
 
         return self.data, self.vars
 
-    def co2_custom_data(self):
-
-        sets = [{'label': 'XCO2 Mean',      'value': 'co2_raw'},
-                {'label': 'XCO2 Residuals', 'value': 'co2_res'},
-                {'label': 'XCO2 Delta',     'value': 'co2_delt'},
-                {'label': 'CO2 Pres. Mean', 'value': 'co2_det_state'},
-                {'label': 'CO2 Mean',       'value': 'co2_mean_zp'},
-                {'label': 'CO2 Mean SP',    'value': 'co2_mean_sp'},
-                {'label': 'CO2 Span & Temp','value': 'co2_span_temp'},
-                {'label': 'CO2 Zero Temp',  'value': 'co2_zero_temp'},
-                {'label': 'CO2 STDDEV',     'value': 'co2_stddev'},
-                {'label': 'O2 Mean',        'value': 'o2_mean'},
-                {'label': 'CO2 Span',       'value': 'co2_span'},
-                {'label': 'CO2 Zero',       'value': 'co2_zero'},
-                {'label': 'Pres Difference','value': 'pres_state'}
-        ]
-
-        return sets
-
 
     def catagorize(self):
 

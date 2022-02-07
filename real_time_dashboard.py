@@ -22,19 +22,25 @@ rt_url2 = 'https://dunkel.pmel.noaa.gov:9290/erddap/tabledap/sd1067_2021_post_mi
 rt_url3 = 'https://dunkel.pmel.noaa.gov:9290/erddap/tabledap/sd1030_2021_post_mission.csv'
 set_loc = 'D:\Data\CO2 Sensor tests\\asvco2_gas_validation_all_fixed_station_mirror.csv'
 
-dataset = data_import.Dataset(rt_url1)
-# dataset2 = data_import.Dataset(rt_url2)
-# dataset3 = data_import.Dataset(rt_url3)
-#
-# dataset = pd.concat([dataset1, dataset2, dataset3])
+custom_sets = [{'label': 'XCO2 Mean', 'value': 'co2_raw'},
+        {'label': 'XCO2 Residuals', 'value': 'co2_res'},
+        {'label': 'XCO2 Delta', 'value': 'co2_delt'},
+        {'label': 'CO2 Pres. Mean', 'value': 'co2_det_state'},
+        {'label': 'CO2 Mean', 'value': 'co2_mean_zp'},
+        {'label': 'CO2 Mean SP', 'value': 'co2_mean_sp'},
+        {'label': 'CO2 Span & Temp', 'value': 'co2_span_temp'},
+        {'label': 'CO2 Zero Temp', 'value': 'co2_zero_temp'},
+        {'label': 'CO2 STDDEV', 'value': 'co2_stddev'},
+        {'label': 'O2 Mean', 'value': 'o2_mean'},
+        {'label': 'CO2 Span', 'value': 'co2_span'},
+        {'label': 'CO2 Zero', 'value': 'co2_zero'},
+        {'label': 'Pres Difference', 'value': 'pres_state'}
+        ]
 
-# graph_config = {'modeBarButtonsToRemove' : ['hoverCompareCartesian','select2d', 'lasso2d'],
-#                 'doubleClick':  'reset+autosize', 'toImageButtonOptions': { 'height': None, 'width': None, },
-#                 'displaylogo': False}
+
+dataset = data_import.Dataset(rt_url1)
 
 colors = {'background': '#111111', 'text': '#7FDBFF'}
-
-#external_stylesheets = ['https://codepen.io./chriddyp/pen/bWLwgP.css']
 
 app = dash.Dash(__name__,
                 meta_tags=[{"name": "viewport", "content": "width=device-width, initial-scale=1"}],
@@ -45,7 +51,6 @@ tools_card = dbc.Card(
             style={'backgroundColor': colors['background']},
            children=[dcc.DatePickerRange(
                 id='date-picker',
-                #style={'backgroundColor': colors['background']},
                 min_date_allowed=dataset.t_start,
                 max_date_allowed=dataset.t_end,
                 start_date=dataset.t_end - datetime.timedelta(days=14),
@@ -54,9 +59,7 @@ tools_card = dbc.Card(
             dhtml.Label(['Select Set']),
             dcc.Dropdown(
                 id="select_x",
-                #style={'backgroundColor': colors['background']},
-                options=dataset.co2_custom_data(),
-                #value=dataset.co2_custom_data()[0]['value'],
+                options=custom_sets,
                 value='co2_raw',
                 clearable=False
                 )
@@ -64,34 +67,23 @@ tools_card = dbc.Card(
 )
 
 graph_card = dbc.Card(
-    [#dbc.CardHeader("Here's a graph"),
-     dbc.CardBody(
+    [dbc.CardBody(
          [dcc.Loading(dcc.Graph(id='graphs'))
                    ])
     ]
 )
 
-#app.layout = dbc.Container(
+
 app.layout = dhtml.Div([
-    # dhtml.H1([
-    #     dhtml.Title('ASVCO2 Reporting'),
-    #     dhtml.Button('Refresh', style={'float': 'right'}, id='refresh', n_clicks=0),
-    # ]),
-    #dhtml.Div([
     dbc.Card(
-    #dbc.Container(children=[
         dbc.CardBody([
             dbc.Row([dhtml.H1('AVSCO2')]),
             dbc.Row([
                 dbc.Col(tools_card, width=3),
                 dbc.Col(graph_card, width=9)
             ])
-        #])
         ])
     )
-    #],
-    #is_loading=True)
-    #])
 ])
 
 '''
@@ -290,8 +282,6 @@ def plot_evar(selection, t_start, t_end):
         'CO2 Pres. Mean',
             Primary: CO2DETECTOR_PRESS_MEAN_ASVCO2 for each state
         '''
-
-        #states = ['ZPON', 'ZPOFF', 'ZPPCAL', 'SPON', 'SPOFF', 'SPPCAL', 'EPON', 'EPOFF', 'APON', 'APOFF']
 
         temp = df[df['INSTRUMENT_STATE'] == 'ZPON']
 
