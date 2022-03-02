@@ -24,6 +24,10 @@ def gen_erddap_date(edate):
 
 # generates datetime.datetime object from ERDDAP compatable date
 def from_erddap_date(edate):
+
+    if pd.isna(edate):
+        return edate
+
     redate = datetime.datetime(year=int(edate[:4]),
                                month=int(edate[5:7]),
                                day=int(edate[8:10]),

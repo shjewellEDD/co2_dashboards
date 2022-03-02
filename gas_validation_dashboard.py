@@ -2,6 +2,7 @@
 Gas Validaiton Dashboard
 
 TODO:
+    What column defines if the point has failed or passed the range check?
     Need to come up with a way to deal with sets and make it come from outside the data_import.py module
 '''
 
@@ -23,6 +24,7 @@ state_select_vars = ['INSTRUMENT_STATE', 'last_ASVCO2_validation', 'CO2LastZero'
                      'ASVCO2_vendor_name']
 
 set_url = 'https://dunkel.pmel.noaa.gov:9290/erddap/tabledap/asvco2_gas_validation_summary_mirror.csv'
+#set_url =
 
 custom_sets = [{'label': 'XCO2 Mean',       'value': 'resids'},
                {'label': 'XCO2 Residuals',  'value': 'cals'},
@@ -39,31 +41,38 @@ app = dash.Dash(__name__,
                 meta_tags=[{"name": "viewport", "content": "width=device-width, initial-scale=1"}],
                 external_stylesheets=[dbc.themes.SLATE])
 
-tools_card = dbc.Card(
+tools_card = dbc.Card([
     dbc.CardBody(
-            style={'backgroundColor': colors['background']},
-           children=[dcc.DatePickerRange(
+           style={'backgroundColor': colors['background']},
+           children=[
+                dcc.DatePickerRange(
                 id='date-picker',
                 min_date_allowed=dataset.t_start,
                 max_date_allowed=dataset.t_end,
                 start_date=dataset.t_end - datetime.timedelta(days=14),
                 end_date=dataset.t_end
-            ),
+                ),
             dhtml.Label(['Select Set']),
             dcc.Dropdown(
                 id="select_x",
                 options=custom_sets,
                 value= 'resids',
                 clearable=False
+                ),
+           dhtml.Label(['']),
+            dash_table.DataTable(
+                id='datatable-interactive',
+                #data=dataset.to_dict('records'),
+                columns=[{'name': 'Serial Number', 'id': 'serial'},
+                         {'name': 'Size', 'id': 'size'},
+                         {'name': 'State', 'id': 'state'}]
                 )
-            # Datatable goes here
-            ])
-)
+    ])
+])
 
 graph_card = dbc.Card(
     [dbc.CardBody(
-         [dcc.Loading(dcc.Graph(id='graphs'))
-                   ])
+         [dcc.Loading(dcc.Graph(id='graphs'))])
     ]
 )
 
@@ -124,7 +133,7 @@ def load_plot(plot_fig, start_date, end_date):
                                mode='markers', marker={'size': 5}, row=1, col=1)
         load_plots.add_scatter(x=epoff['CO2_REF_LAB'], y=epoff['CO2_DRY_TCORR_RESIDUAL_MEAN_ASVCO2'], name='EPOFF', hoverinfo='x+y+name',
                                mode='markers', marker={'size': 5}, row=1, col=1)
-        load_plots.add_scatter(x=apoff['CO2_REF_LAB'], y=apoff['CO2_RESIDUAL_M-+EAN_ASVCO2'], name='APOFF', hoverinfo='x+y+name',
+        load_plots.add_scatter(x=apoff['CO2_REF_LAB'], y=apoff['CO2_RESIDUAL_MEAN_ASVCO2'], name='APOFF', hoverinfo='x+y+name',
                                mode='markers', marker={'size': 5}, row=1, col=1)
         load_plots.add_scatter(x=apoff['CO2_REF_LAB'], y=apoff['CO2_DRY_TCORR_RESIDUAL_MEAN_ASVCO2'], name='APOFF', hoverinfo='x+y+name',
                                mode='markers', marker={'size': 5}, row=1, col=1)
@@ -140,6 +149,10 @@ def load_plot(plot_fig, start_date, end_date):
                                     showlegend=False, modebar={'orientation': 'h'}, autosize=True,
                                     margin=dict(l=25, r=25, b=25, t=25, pad=4)
                                     )
+
+        table_df = pd.concat([epoff, apoff])
+        table_data = {'state': table_df['CO2DETECTOR_serialnumber'].unique()
+
 
         return load_plots
 
